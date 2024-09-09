@@ -10,7 +10,7 @@
 #define PORT 8080
 #define buffer 1024
 
-void func(int sktclient) 
+void func(int sktclient,int cnt) 
 { 
 	char buff[buffer]; 
 	 
@@ -21,9 +21,9 @@ void func(int sktclient)
 		// read the message from client and copy it in buffer 
 		read(sktclient, buff, sizeof(buff)); 
 		// print buffer which contains the client contents 
-		printf("Msg from client: %s\t \n", buff); 
+		printf("Msg from client (%d): %s\t \n",cnt, buff); 
 
-        printf("Msg to client: %s\t \n", buff);
+        printf("Msg to client (%d): %s\t \n",cnt, buff);
 
 
 		// and send that buffer to client 
@@ -32,6 +32,7 @@ void func(int sktclient)
 		// if msg contains "Exit" then server exit and chat ended. 
 		if (strncmp("exit", buff, 4) == 0) { 
 			printf("Server Exit...\n"); 
+            //cnt = cnt-1;
 			break; 
 		} 
 	} 
@@ -43,15 +44,17 @@ int main()
     int sktsever , sktclient, n;
     struct sockaddr_in addsever, addclient;
 
-
+    int cnt = 0;
     pid_t childpid;
     
     sktsever = socket(AF_INET, SOCK_STREAM, 0); 
-    if (sktsever < 0){
+    if (sktsever < 0)
+    {
         printf("Scoket not Created...\n");
         exit(1);
     }
-    else {
+    else 
+    {
         printf("Socket creation successfully....\n");
     }
 
@@ -61,39 +64,49 @@ int main()
     addsever.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     //b = bind(sktsever, (struct sockadd*)&addsever, sizeof(addsever));
-    if (bind(sktsever, (struct sockaddr*)&addsever, sizeof(addsever)) < 0){
+    if (bind(sktsever, (struct sockaddr*)&addsever, sizeof(addsever)) < 0)
+    {
         printf("bind error\n");
         exit(1);
     }
-    else {
+    else 
+    {
         printf("socket bind completed....\n");
     }
 
-    if((listen(sktsever, 10)) < 0){
+    if((listen(sktsever, 10)) < 0)
+    {
         printf("Listen fail....\n"); 
 		exit(1); 
     }
-    else {
+    else 
+    {
         printf("Server listening for clients....\n");
     }
 
     n = sizeof(addclient);
 
-    while(1){
+    while(1)
+    {
         sktclient = accept(sktsever, (struct sockaddr*)&addclient, &n);
-        if (sktclient < 0) { 
-		printf("server accept failed...\n"); 
-		exit(0); 
-	}
-	else{
-        printf("Connection accepted from %s:%d...\n", inet_ntoa(addsever.sin_addr), ntohs(addsever.sin_port)); 
-    }
+        if (sktclient < 0) 
+        { 
+		    printf("server accept failed...\n"); 
+            cnt = cnt-1;
+		    exit(0); 
+	    }
+	    else
+        {
+            printf("Connection accepted from %s:(%d).\n", inet_ntoa(addsever.sin_addr), ntohs(addsever.sin_port));
+            cnt = cnt+1; 
+        }
 
-    if((childpid = fork()) == 0){
+        if((childpid = fork()) == 0)
+        {
 			close(sktsever);
 
 
-            func(sktclient);
+            func(sktclient,cnt);
 
 
             
