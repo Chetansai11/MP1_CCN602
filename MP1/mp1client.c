@@ -7,11 +7,14 @@
 #include <stdlib.h> 
 #include <arpa/inet.h>
 #include <string.h> 
+#include <errno.h>
 #include <unistd.h>
-#define buffer 1024
-#define PORT 8080
+#define buffer 100
+//#define PORT 8080
 
-void func(int sktsever)
+
+
+void chatcli(int sktsever)
 {
 	char buff[buffer];
 	int n;
@@ -32,13 +35,18 @@ void func(int sktsever)
 	}
 }
 
-int main(){
+void handle_error(const char *msg){
+	perror(msg);
+}
+
+
+int main(int arg_cnt,char** numarg){
     int sktsever , sktclient;
     struct sockaddr_in addsever, addclient;
 
     sktsever = socket(AF_INET, SOCK_STREAM, 0); 
     if (sktsever < 0){
-        printf("Scoket not Created...\n");
+        handle_error("Scoket not Created...\n");
         exit(1);
     }
     else {
@@ -47,19 +55,19 @@ int main(){
 
     memset(&addsever, '\0', sizeof(addsever));
     addsever.sin_family = AF_INET;
-    addsever.sin_port = PORT;
-    addsever.sin_addr.s_addr = inet_addr("127.0.0.1");
+    addsever.sin_port = htons(atoi(numarg[2]));
+    addsever.sin_addr.s_addr = inet_addr(numarg[1]);
 
     // connect the client socket to server socket
 	if (connect(sktsever, (struct sockaddr*)&addsever, sizeof(addsever)) != 0) {
-		printf("connection with the server failed...\n");
+		handle_error("connection with the server failed...\n");
 		exit(0);
 	}
 	else{
         printf("connected to the server..\n");
     }
 
-    func(sktsever);
+    chatcli(sktsever);
 
 	// close the socket
 	close(sktsever);

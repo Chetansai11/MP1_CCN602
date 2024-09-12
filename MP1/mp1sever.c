@@ -6,51 +6,59 @@
 #include <stdlib.h> 
 #include <arpa/inet.h>
 #include <string.h> 
+#include <errno.h>
 #include <unistd.h>
-#define PORT 8080
-#define buffer 1024
+//#define PORT 8080
+#define buffer 100
+// defining the port number and the buffer size of the message.
 
-void func(int sktclient,int cnt) 
+// this function is to send echo to client and close the client when the "exit" massage is received.
+void chatser(int sktclient,int cnt) 
 { 
-	char buff[buffer]; 
+	char buf[buffer]; 
 	 
-	// infinite loop for chat 
+	// starting the loop
 	for (;;) { 
-		bzero(buff, buffer); 
+		bzero(buf, buffer); 
 
-		// read the message from client and copy it in buffer 
-		read(sktclient, buff, sizeof(buff)); 
-		// print buffer which contains the client contents 
-		printf("Msg from client (%d): %s\t \n",cnt, buff); 
+		// message is read from the client and stored in the buf.
+		read(sktclient, buf, sizeof(buf)); 
+		// prints the received msg. 
+		printf("Msg from client (%d): %s\t \n",cnt, buf); 
+        // echos the same msg back to client.
+		write(sktclient, buf, sizeof(buf)); 
+        printf("Msg to client (%d): %s\t \n",cnt, buf);
 
-        printf("Msg to client (%d): %s\t \n",cnt, buff);
-
-
-		// and send that buffer to client 
-		write(sktclient, buff, sizeof(buff)); 
-
-		// if msg contains "Exit" then server exit and chat ended. 
-		if (strncmp("exit", buff, 4) == 0) { 
-			printf("Server Exit...\n"); 
-            //cnt = cnt-1;
+		// if the msg contains "exit" text it closes the chat.  
+		if (strncmp("exit", buf, 4) == 0) { 
+			printf("Client (%d) Exited ...\n",cnt);
 			break; 
 		} 
 	} 
 } 
 
 
-int main()
+//for error handling 
+void handle_error(const char *msg){
+	perror(msg);
+}
+
+
+int main(int arg_cnt,char** numarg)
 {
+    //creating the socket varibles for server and client.
     int sktsever , sktclient, n;
+    //creating the varibles for storing the address of  server and client.
     struct sockaddr_in addsever, addclient;
 
+    //counting the no of clients that are connected.
     int cnt = 0;
     pid_t childpid;
-    
+    //Creating the server Socket with IPv4 and TCP connection with socket() and handling the errors.
     sktsever = socket(AF_INET, SOCK_STREAM, 0); 
     if (sktsever < 0)
     {
-        printf("Scoket not Created...\n");
+        handle_error("Scoket not Created...\n");
         exit(1);
     }
     else 
@@ -58,15 +66,17 @@ int main()
         printf("Socket creation successfully....\n");
     }
 
+    //Defining the IPv4 address as localhost and defining the port.
+
     memset(&addsever, '\0', sizeof(addsever));
     addsever.sin_family = AF_INET;
-    addsever.sin_port = PORT;
+    addsever.sin_port = htons(atoi(numarg[1]));
     addsever.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    //b = bind(sktsever, (struct sockadd*)&addsever, sizeof(addsever));
+    //binding the server socket to the address of the server with bind(). 
     if (bind(sktsever, (struct sockaddr*)&addsever, sizeof(addsever)) < 0)
     {
-        printf("bind error\n");
+        handle_error("bind error\n");
         exit(1);
     }
     else 
@@ -74,9 +84,10 @@ int main()
         printf("socket bind completed....\n");
     }
 
+    // listening to the clients using listen() function.
     if((listen(sktsever, 10)) < 0)
     {
-        printf("Listen fail....\n"); 
+        handle_error("Listen fail....\n"); 
 		exit(1); 
     }
     else 
@@ -85,14 +96,15 @@ int main()
     }
 
     n = sizeof(addclient);
-
+    //starting the loop to wait and accept the clients.
     while(1)
     {
+        //accepting the clients using accept().
         sktclient = accept(sktsever, (struct sockaddr*)&addclient, &n);
         if (sktclient < 0) 
         { 
-		    printf("server accept failed...\n"); 
-            cnt = cnt-1;
+            handle_error("server accept failed..."); 
+            
 		    exit(0); 
 	    }
 	    else
@@ -101,21 +113,21 @@ int main()
             cnt = cnt+1; 
         }
 
+        // creating the child process using fork while accepting other clients.
         if((childpid = fork()) == 0)
         {
-			close(sktsever);
+			close(sktsever); 
 
 
-            func(sktclient,cnt);
-
-
-            
+            chatser(sktclient,cnt);
+              
         }
+        //close(client_socket);
 
     } 
 
     close(sktsever); 
-    printf("client closed!...\n");
+    printf("server closed!...\n");
     
     
     return 0;
