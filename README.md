@@ -1,10 +1,15 @@
-
 ECEN 602 – MP1 Readme File
+
+Contributions:
+
+**Chetan Sai Borra**: Developed the server-side code, tested the functionality, and created the Makefile.
+**Ganesh Vairavan Arumugam**: Developed the client-side code and performed testing of the code.
+
 
 Echo Protocol 
 The Echo Protocol is a service in the Internet Protocol Suite that was defined in 1983 in RFC 862 by Jon Postel. It was originally proposed to test and measure an IP network. A host may connect to a server that supports the Echo Protocol using either TCP or UDP on the well-known port number 7. The server responds with an exact copy of the data it received. Figure 1 describes the Echo Protocol
  
-Figure 1 Echo Protocol
+
 
 TCP Client:
 The client code establishes a TCP connection to the server and facilitates communication between the user and the server. Below are the process followed in the client code organization,
